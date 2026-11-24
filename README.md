@@ -1,30 +1,58 @@
-# IFM AI-Assisted Financial Modelling — USD/JPY
+# International Financial Management — AI-Assisted Financial Modelling (USD/JPY)
 
 ## Current project version
-Sample: January 2020–October 2026 (82 calendar months). The dataset uses the supplied FRED files and Japan Statistics Bureau/e-Stat Japan CPI 2020-base All Items series.
+- Currency pair: USD/JPY, quoted as Japanese yen per one US dollar (JPY per USD).
+- Sample: January 2020 to October 2026 (82 calendar months).
+- Frequency: monthly. Daily USD/JPY observations use the last available quote in each calendar month.
+- Japan CPI source: Statistics Bureau of Japan / e-Stat, 2020-base monthly CPI, All Items.
+- Missing source observations are retained as blanks. No values are invented, set to zero, or interpolated.
 
-## Files
-- `app.py`: three-tab Streamlit dashboard.
-- `USDJPY_IFM_compiled_dataset_2020_onwards.csv`: monthly source dataset.
-- `USDJPY_IFM_calculated_metrics.csv`: dataset plus calculated model variables.
-- `USDJPY_IFM_Data_Workbook.xlsx`: source data, metrics and data dictionary.
-- `compile_dataset.py`: rebuilds the monthly dataset from the five raw source files.
-- `methodology.docx`: two-page methodology and limitations.
-- Five raw source files: DEXJPUS, CPIAUCNS, FEDFUNDS, IRSTCI01JPM156N and zmi2020a.
+## Dashboard
+`app.py` is a three-tab Streamlit dashboard:
+1. Relative Purchasing Power Parity (PPP) and currency misalignment.
+2. Interest-rate differential, UIP interpretation, and realised 12-month unhedged carry trade.
+3. International Fisher Effect (IFE) diagnostic using inflation and nominal interest-rate differentials, Pearson correlation, and OLS regression.
 
-## Run locally (Windows)
-1. Install Python 3.10 or newer.
-2. Open Command Prompt in this folder.
-3. Run `python -m pip install -r requirements.txt`.
-4. Run `python compile_dataset.py` if you want to rebuild the dataset.
-5. Run `streamlit run app.py`.
-6. The dashboard opens in your browser. The compiled CSV is loaded automatically; you can also upload a replacement CSV in the sidebar.
+Each tab includes an expandable formula and calculation explanation. The app also provides dataset coverage, missing-data notes, source mapping, and a downloadable calculated dataset.
 
-## Calculations
-PPP is relative PPP anchored to the first complete month. Spot changes and carry returns use exact calendar-month t+12/t-12 observations. Missing observations are retained as blanks and are not interpolated.
+## Data sources
+| Variable | Source / series | Treatment |
+|---|---|---|
+| USD/JPY spot | FRED `DEXJPUS` | Daily; last available quote in each month |
+| US CPI | FRED `CPIAUCNS` | Monthly, not seasonally adjusted |
+| Japan CPI | Statistics Bureau of Japan / e-Stat, `zmi2020a.csv` | Monthly, 2020-base, All Items |
+| US interest rate | FRED `FEDFUNDS` | Monthly, percent per annum |
+| Japan interest rate | FRED `IRSTCI01JPM156N` | Monthly, percent per annum |
 
-## Limitations
-The supplied US CPI file contains one missing monthly observation. The dependent calculations are left unavailable rather than filled. Japan CPI is Statistics Bureau/e-Stat 2020-base All Items, while the US CPI is not seasonally adjusted. Interest-rate instruments are not perfectly identical. Realised CPI inflation is a proxy, not expected inflation. Carry is simplified and unhedged. CIP is not tested because no forward-rate series is included.
+## Run locally
+Install Python 3.10 or newer. In this folder run:
+```bash
+python -m pip install -r requirements.txt
+streamlit run app.py
+```
+Or on Windows, double-click `START_HERE.bat`.
 
-## Deployment
-For Streamlit Community Cloud, upload `app.py`, `requirements.txt`, and `USDJPY_IFM_compiled_dataset_2020_onwards.csv` to a GitHub repository. Add the raw sources and compiler if you want reproducibility. Deploy `app.py` at https://share.streamlit.io/. Test all three tabs and submit the public app URL.
+To rebuild the compiled monthly data from the five included source files:
+```bash
+python compile_dataset.py
+```
+
+## Deploy
+The GitHub repository should contain at least:
+- `app.py`
+- `requirements.txt`
+- `USDJPY_IFM_compiled_dataset_2020_onwards.csv`
+- `README.md`
+
+On Streamlit Community Cloud choose branch `main` and main file `app.py`.
+
+## Model definitions and limitations
+- Relative PPP is anchored to the first month with valid spot, US CPI and Japan CPI observations. The result depends on the base month.
+- Misalignment is `(actual spot / PPP-implied spot - 1) * 100`. With JPY per USD quotation, positive values indicate relative USD overvaluation / JPY undervaluation.
+- The nominal interest differential is US rate minus Japan rate. Under UIP, a positive US-minus-Japan differential implies expected USD depreciation (a fall in JPY per USD); the chart compares this with realised, not expected, spot changes.
+- Carry return is a simplified, unhedged 12-month JPY-funded USD investment return. Annual rates are treated as effective annual rates. Transaction costs, taxes, credit/funding constraints and risk premia are not modelled.
+- Covered Interest Parity (CIP) is not tested because matched-maturity forward exchange rates are not included.
+- IFE uses realised year-over-year CPI inflation as a proxy, not expected inflation. The relationship is descriptive; correlation does not establish causation.
+- The supplied US CPI file has one missing monthly observation (October 2025). It is retained as missing; affected calculations are unavailable where required.
+- The two interest-rate series are not perfectly identical instruments or maturities.
+- Data providers may revise historical observations. Record the download date when submitting.
